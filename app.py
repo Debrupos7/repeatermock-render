@@ -348,7 +348,6 @@ async def main():
 
 # ===== Flask API wrapper for HTTP access =====
 
-app = Flask(__name__)
 @app.route("/health")
 def health():
     return jsonify({"status": "ok", "time": datetime.now(timezone.utc).isoformat()})
