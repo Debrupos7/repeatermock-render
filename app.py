@@ -63,7 +63,7 @@ def run_login_async(run_id, email, password):
 
         URL = "https://repeatermock.com/login"
         SITEKEY = "0x4AAAAAADixxaKQ-LspbGkf"
-        CHROME_PATH = "/usr/bin/google-chrome-stable"
+        CHROME_PATH = os.environ.get("CHROME_PATH", "/usr/bin/chromium")
         PROFILE_DIR = "/tmp/ts_profile"
 
         async def solve_and_login():
@@ -384,7 +384,7 @@ def debug():
     
     # Check Chrome version
     try:
-        r = subprocess.run(["google-chrome-stable", "--version"], capture_output=True, text=True, timeout=5)
+        r = subprocess.run(["chromium", "--version"], capture_output=True, text=True, timeout=5)
         results["chrome_version"] = r.stdout.strip()
     except Exception as e:
         results["chrome_version"] = f"ERROR: {e}"
@@ -398,7 +398,7 @@ def debug():
     
     # Check ldd on chrome
     try:
-        r = subprocess.run(["ldd", "/usr/bin/google-chrome-stable"], capture_output=True, text=True, timeout=5)
+        r = subprocess.run(["ldd", "/usr/bin/chromium"], capture_output=True, text=True, timeout=5)
         missing = [l for l in r.stdout.split("\n") if "not found" in l]
         results["missing_libs"] = missing if missing else "none"
     except Exception as e:
@@ -420,7 +420,7 @@ def debug():
     # Try Chrome with --single-process (uses less memory)
     try:
         r = subprocess.run(
-            ["google-chrome-stable", "--no-sandbox", "--disable-dev-shm-usage",
+            ["chromium", "--no-sandbox", "--disable-dev-shm-usage",
              "--disable-gpu", "--headless=new", "--single-process",
              "--no-zygote", "--dump-dom", "about:blank"],
             capture_output=True, text=True, timeout=20
@@ -437,7 +437,7 @@ def debug():
     # Test 1: Chrome headless=new
     try:
         r = subprocess.run(
-            ["google-chrome-stable", "--no-sandbox", "--disable-dev-shm-usage",
+            ["chromium", "--no-sandbox", "--disable-dev-shm-usage",
              "--disable-gpu", "--headless=new", "--dump-dom", "about:blank"],
             capture_output=True, text=True, timeout=15
         )
@@ -453,7 +453,7 @@ def debug():
     # Test 2: Chrome headed under Xvfb
     try:
         r = subprocess.run(
-            ["google-chrome-stable", "--no-sandbox", "--disable-dev-shm-usage",
+            ["chromium", "--no-sandbox", "--disable-dev-shm-usage",
              "--disable-gpu", "--dump-dom", "about:blank"],
             capture_output=True, text=True, timeout=15,
             env={**os.environ, "DISPLAY": ":99"}
@@ -474,7 +474,7 @@ def debug():
         
         async def test_nodriver():
             browser = await uc.start(
-                browser_executable_path="/usr/bin/google-chrome-stable",
+                browser_executable_path="/usr/bin/chromium",
                 headless=False,
                 sandbox=False,
                 browser_args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
