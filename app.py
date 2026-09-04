@@ -353,8 +353,6 @@ if __name__ == "__main__":
 from flask import Flask, jsonify, request
 
 app = Flask(__name__)
-runs = {}
-
 @app.route("/health")
 def health():
     return jsonify({"status": "ok", "time": datetime.now(timezone.utc).isoformat()})
@@ -380,9 +378,9 @@ def login_endpoint():
     runs[run_id] = {"status": "queued", "logs": [], "result": None}
     
     def run_bg():
+        global _current_run_id, NOCAPTCHA_API_KEY
+        _current_run_id = run_id
         runs[run_id]["status"] = "running"
-        # Override globals for this run
-        global NOCAPTCHA_API_KEY
         old_key = NOCAPTCHA_API_KEY
         if api_key:
             NOCAPTCHA_API_KEY = api_key
@@ -396,6 +394,8 @@ def login_endpoint():
             runs[run_id]["logs"].append(traceback.format_exc())
         finally:
             NOCAPTCHA_API_KEY = old_key
+            runs = {}
+_current_run_id = None
     
     import threading
     t = threading.Thread(target=run_bg)
