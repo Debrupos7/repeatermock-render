@@ -371,8 +371,7 @@ def index():
 
 @app.route("/login", methods=["POST"])
 def login_endpoint():
-    try:
-        data = request.get_json(silent=True) or {}
+    data = request.get_json(silent=True) or {}
         email = data.get("email", EMAIL)
         password = data.get("password", PASSWORD)
         api_key = data.get("apikey", NOCAPTCHA_API_KEY)
@@ -403,9 +402,6 @@ def login_endpoint():
     t.daemon = True
     t.start()
     return jsonify({"run_id": run_id, "status": "started", "message": "Poll /status/<run_id> for logs"})
-    except Exception as e:
-        import traceback
-        return jsonify({"error": str(e), "traceback": traceback.format_exc()}), 500
 
 @app.route("/status/<run_id>")
 def status_endpoint(run_id):
