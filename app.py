@@ -345,9 +345,6 @@ async def main():
         log(f"\n🎉 ALL DONE — no browser, no local machine, no proxy needed!")
 
 
-if __name__ == "__main__":
-    asyncio.run(main())
-
 
 # ===== Flask API wrapper for HTTP access =====
 
