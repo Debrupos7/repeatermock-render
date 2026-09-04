@@ -96,7 +96,7 @@ async def solve_turnstile(cli):
     r = await cli.post(f"{NOCAPTCHA_BASE}/createTask", json={
         "clientKey": NOCAPTCHA_API_KEY,
         "task": {
-            "type": "TurnstileTaskProxyLess",
+            "type": "AntiTurnstileTaskProxyLess",
             "websiteURL": LOGIN_URL,
             "websiteKey": SITEKEY,
         }
