@@ -372,11 +372,11 @@ def index():
 @app.route("/login", methods=["POST"])
 def login_endpoint():
     data = request.get_json(silent=True) or {}
-        email = data.get("email", EMAIL)
-        password = data.get("password", PASSWORD)
-        api_key = data.get("apikey", NOCAPTCHA_API_KEY)
-        run_id = f"run_{int(time.time())}"
-        runs[run_id] = {"status": "queued", "logs": [], "result": None}
+    email = data.get("email", EMAIL)
+    password = data.get("password", PASSWORD)
+    api_key = data.get("apikey", NOCAPTCHA_API_KEY)
+    run_id = f"run_{int(time.time())}"
+    runs[run_id] = {"status": "queued", "logs": [], "result": None}
     
     def run_bg():
         global _current_run_id, NOCAPTCHA_API_KEY
