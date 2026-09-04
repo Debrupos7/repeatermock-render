@@ -63,7 +63,29 @@ def run_login_async(run_id, email, password):
 
         URL = "https://repeatermock.com/login"
         SITEKEY = "0x4AAAAAADixxaKQ-LspbGkf"
-        CHROME_PATH = os.environ.get("CHROME_PATH", "/usr/bin/chromium")
+        def find_chrome():
+    """Find Chrome/Chromium binary."""
+    import glob
+    # Check env var first
+    env_path = os.environ.get("CHROME_PATH", "")
+    if env_path and os.path.isfile(env_path):
+        return env_path
+    # Check Playwright's Chromium
+    for pattern in [
+        "/home/*/.cache/ms-playwright/chromium-*/chrome-linux*/chrome",
+        "/root/.cache/ms-playwright/chromium-*/chrome-linux*/chrome",
+        "/root/.cache/ms-playwright/chromium-*/chrome-linux64/chrome",
+    ]:
+        matches = glob.glob(pattern)
+        if matches:
+            return matches[0]
+    # Check system chromium
+    for p in ["/usr/bin/chromium", "/usr/bin/google-chrome-stable", "/usr/bin/chromium-browser"]:
+        if os.path.isfile(p):
+            return p
+    return "/usr/bin/chromium"
+
+CHROME_PATH = find_chrome()
         PROFILE_DIR = "/tmp/ts_profile"
 
         async def solve_and_login():
@@ -389,7 +411,7 @@ def debug():
     
     # Check Chrome version
     try:
-        r = subprocess.run(["chromium", "--version"], capture_output=True, text=True, timeout=5)
+        r = subprocess.run([CHROME_PATH, "--version"], capture_output=True, text=True, timeout=5)
         results["chrome_version"] = r.stdout.strip()
     except Exception as e:
         results["chrome_version"] = f"ERROR: {e}"
@@ -403,7 +425,7 @@ def debug():
     
     # Check ldd on chrome
     try:
-        r = subprocess.run(["ldd", "/usr/bin/chromium"], capture_output=True, text=True, timeout=5)
+        r = subprocess.run(["ldd", CHROME_PATH], capture_output=True, text=True, timeout=5)
         missing = [l for l in r.stdout.split("\n") if "not found" in l]
         results["missing_libs"] = missing if missing else "none"
     except Exception as e:
@@ -425,7 +447,7 @@ def debug():
     # Try Chrome with --single-process (uses less memory)
     try:
         r = subprocess.run(
-            ["chromium", "--no-sandbox", "--disable-dev-shm-usage",
+            [CHROME_PATH, "--no-sandbox", "--disable-dev-shm-usage",
              "--disable-gpu", "--headless=new", "--single-process",
              "--no-zygote", "--dump-dom", "about:blank"],
             capture_output=True, text=True, timeout=20
@@ -442,7 +464,7 @@ def debug():
     # Test 1: Chrome headless=new
     try:
         r = subprocess.run(
-            ["chromium", "--no-sandbox", "--disable-dev-shm-usage",
+            [CHROME_PATH, "--no-sandbox", "--disable-dev-shm-usage",
              "--disable-gpu", "--headless=new", "--dump-dom", "about:blank"],
             capture_output=True, text=True, timeout=15
         )
@@ -458,7 +480,7 @@ def debug():
     # Test 2: Chrome headed under Xvfb
     try:
         r = subprocess.run(
-            ["chromium", "--no-sandbox", "--disable-dev-shm-usage",
+            [CHROME_PATH, "--no-sandbox", "--disable-dev-shm-usage",
              "--disable-gpu", "--dump-dom", "about:blank"],
             capture_output=True, text=True, timeout=15,
             env={**os.environ, "DISPLAY": ":99"}
