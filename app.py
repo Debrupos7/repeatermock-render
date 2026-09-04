@@ -404,6 +404,36 @@ def debug():
     except Exception as e:
         results["missing_libs"] = f"ERROR: {e}"
     
+    # Check memory
+    try:
+        r = subprocess.run(["free", "-m"], capture_output=True, text=True, timeout=5)
+        results["memory"] = r.stdout.strip()
+    except: pass
+    
+    # Check /proc/meminfo
+    try:
+        with open("/proc/meminfo") as f:
+            mem = f.read()[:500]
+        results["meminfo"] = mem
+    except: pass
+    
+    # Try Chrome with --single-process (uses less memory)
+    try:
+        r = subprocess.run(
+            ["google-chrome-stable", "--no-sandbox", "--disable-dev-shm-usage",
+             "--disable-gpu", "--headless=new", "--single-process",
+             "--no-zygote", "--dump-dom", "about:blank"],
+            capture_output=True, text=True, timeout=20
+        )
+        results["chrome_single_process"] = {
+            "returncode": r.returncode,
+            "stdout_len": len(r.stdout),
+            "stdout_preview": r.stdout[:200],
+            "stderr_preview": r.stderr[:300],
+        }
+    except Exception as e:
+        results["chrome_single_process"] = f"ERROR: {e}"
+    
     # Test 1: Chrome headless=new
     try:
         r = subprocess.run(
