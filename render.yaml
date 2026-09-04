@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: repeatermock-login
+    env: docker
+    region: oregon
+    plan: starter
+    healthCheckPath: /health
+    envVars:
+      - key: RM_EMAIL
+        sync: false
+      - key: RM_PASSWORD
+        sync: false
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1
