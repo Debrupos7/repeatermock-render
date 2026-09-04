@@ -371,12 +371,13 @@ def index():
 
 @app.route("/login", methods=["POST"])
 def login_endpoint():
-    data = request.get_json(silent=True) or {}
-    email = data.get("email", EMAIL)
-    password = data.get("password", PASSWORD)
-    api_key = data.get("apikey", NOCAPTCHA_API_KEY)
-    run_id = f"run_{int(time.time())}"
-    runs[run_id] = {"status": "queued", "logs": [], "result": None}
+    try:
+        data = request.get_json(silent=True) or {}
+        email = data.get("email", EMAIL)
+        password = data.get("password", PASSWORD)
+        api_key = data.get("apikey", NOCAPTCHA_API_KEY)
+        run_id = f"run_{int(time.time())}"
+        runs[run_id] = {"status": "queued", "logs": [], "result": None}
     
     def run_bg():
         global _current_run_id, NOCAPTCHA_API_KEY
@@ -402,6 +403,9 @@ def login_endpoint():
     t.daemon = True
     t.start()
     return jsonify({"run_id": run_id, "status": "started", "message": "Poll /status/<run_id> for logs"})
+    except Exception as e:
+        import traceback
+        return jsonify({"error": str(e), "traceback": traceback.format_exc()}), 500
 
 @app.route("/status/<run_id>")
 def status_endpoint(run_id):
