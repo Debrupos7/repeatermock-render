@@ -394,8 +394,7 @@ def login_endpoint():
             runs[run_id]["logs"].append(traceback.format_exc())
         finally:
             NOCAPTCHA_API_KEY = old_key
-            runs = {}
-_current_run_id = None
+            _current_run_id = None
     
     import threading
     t = threading.Thread(target=run_bg)
