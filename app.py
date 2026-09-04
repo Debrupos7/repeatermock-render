@@ -350,7 +350,6 @@ if __name__ == "__main__":
 
 
 # ===== Flask API wrapper for HTTP access =====
-from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 @app.route("/health")
