@@ -389,30 +389,74 @@ def debug():
     except Exception as e:
         results["chrome_version"] = f"ERROR: {e}"
     
-    # Check if DISPLAY is set
     results["display"] = os.environ.get("DISPLAY", "not set")
     
-    # Check whoami
     try:
         r = subprocess.run(["whoami"], capture_output=True, text=True, timeout=5)
         results["user"] = r.stdout.strip()
-    except Exception as e:
-        results["user"] = f"ERROR: {e}"
+    except: pass
     
-    # Try launching Chrome with --no-sandbox and --headless
+    # Check ldd on chrome
+    try:
+        r = subprocess.run(["ldd", "/usr/bin/google-chrome-stable"], capture_output=True, text=True, timeout=5)
+        missing = [l for l in r.stdout.split("\n") if "not found" in l]
+        results["missing_libs"] = missing if missing else "none"
+    except Exception as e:
+        results["missing_libs"] = f"ERROR: {e}"
+    
+    # Test 1: Chrome headless=new
     try:
         r = subprocess.run(
-            ["google-chrome-stable", "--no-sandbox", "--disable-dev-shm-usage", 
-             "--headless", "--dump-dom", "about:blank"],
-            capture_output=True, text=True, timeout=10
+            ["google-chrome-stable", "--no-sandbox", "--disable-dev-shm-usage",
+             "--disable-gpu", "--headless=new", "--dump-dom", "about:blank"],
+            capture_output=True, text=True, timeout=15
         )
-        results["chrome_headless_test"] = {
+        results["chrome_headless_new"] = {
             "returncode": r.returncode,
-            "stdout": r.stdout[:200],
-            "stderr": r.stderr[:200],
+            "stdout_len": len(r.stdout),
+            "stdout_preview": r.stdout[:100],
+            "stderr_preview": r.stderr[:200],
         }
     except Exception as e:
-        results["chrome_headless_test"] = f"ERROR: {e}"
+        results["chrome_headless_new"] = f"ERROR: {e}"
+    
+    # Test 2: Chrome headed under Xvfb
+    try:
+        r = subprocess.run(
+            ["google-chrome-stable", "--no-sandbox", "--disable-dev-shm-usage",
+             "--disable-gpu", "--dump-dom", "about:blank"],
+            capture_output=True, text=True, timeout=15,
+            env={**os.environ, "DISPLAY": ":99"}
+        )
+        results["chrome_headed_xvfb"] = {
+            "returncode": r.returncode,
+            "stdout_len": len(r.stdout),
+            "stdout_preview": r.stdout[:100],
+            "stderr_preview": r.stderr[:200],
+        }
+    except Exception as e:
+        results["chrome_headed_xvfb"] = f"ERROR: {e}"
+    
+    # Test 3: nodriver minimal
+    try:
+        import nodriver as uc
+        import asyncio
+        
+        async def test_nodriver():
+            browser = await uc.start(
+                browser_executable_path="/usr/bin/google-chrome-stable",
+                headless=False,
+                sandbox=False,
+                browser_args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
+            )
+            page = await browser.get("about:blank")
+            await asyncio.sleep(2)
+            browser.stop()
+            return "nodriver OK"
+        
+        results["nodriver_test"] = asyncio.run(test_nodriver())
+    except Exception as e:
+        results["nodriver_test"] = f"ERROR: {e}"
     
     return jsonify(results)
 
