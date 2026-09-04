@@ -1,11 +1,12 @@
 FROM python:3.12-slim
 
-# Install Chrome + Xvfb + dependencies
+# Install Chrome + Xvfb + all Chrome dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wget gnupg2 xvfb \
     libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 \
     libxcomposite1 libxdamage1 libxrandr2 libgbm1 libpango-1.0-0 \
     libcairo2 libasound2 libxshmfence1 fonts-liberation \
+    libx11-xcb1 libxcb-dri3-0 libxss1 libgtk-3-0 \
     && wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
     && apt-get install -y /tmp/chrome.deb || apt-get install -f -y \
     && rm /tmp/chrome.deb \
@@ -17,7 +18,6 @@ RUN pip install --no-cache-dir nodriver httpx flask
 WORKDIR /app
 COPY app.py .
 
-# Create data directory for persistent cookies
 RUN mkdir -p /data/output
 
 EXPOSE 10000

@@ -375,6 +375,59 @@ def cookies():
         return jsonify(json.load(f))
 
 
+
+@app.route("/debug")
+def debug():
+    """Test Chrome launch directly."""
+    import subprocess
+    results = {}
+    
+    # Check Chrome version
+    try:
+        r = subprocess.run(["google-chrome-stable", "--version"], capture_output=True, text=True, timeout=5)
+        results["chrome_version"] = r.stdout.strip()
+    except Exception as e:
+        results["chrome_version"] = f"ERROR: {e}"
+    
+    # Check if DISPLAY is set
+    results["display"] = os.environ.get("DISPLAY", "not set")
+    
+    # Check whoami
+    try:
+        r = subprocess.run(["whoami"], capture_output=True, text=True, timeout=5)
+        results["user"] = r.stdout.strip()
+    except Exception as e:
+        results["user"] = f"ERROR: {e}"
+    
+    # Try launching Chrome with --no-sandbox and --headless
+    try:
+        r = subprocess.run(
+            ["google-chrome-stable", "--no-sandbox", "--disable-dev-shm-usage", 
+             "--headless", "--dump-dom", "about:blank"],
+            capture_output=True, text=True, timeout=10
+        )
+        results["chrome_headless_test"] = {
+            "returncode": r.returncode,
+            "stdout": r.stdout[:200],
+            "stderr": r.stderr[:200],
+        }
+    except Exception as e:
+        results["chrome_headless_test"] = f"ERROR: {e}"
+    
+    return jsonify(results)
+
+
 if __name__ == "__main__":
+    # Start Xvfb for headed Chrome (nodriver needs a display)
+    import subprocess
+    try:
+        subprocess.Popen(["Xvfb", ":99", "-screen", "0", "1280x900x24", "-ac", "-nolisten", "unix"],
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        os.environ["DISPLAY"] = ":99"
+        time.sleep(2)
+        print("Xvfb started on :99", flush=True)
+    except Exception as e:
+        print(f"Xvfb failed: {e}", flush=True)
+    
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port, threaded=True)
