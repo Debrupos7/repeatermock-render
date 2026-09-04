@@ -373,21 +373,35 @@ def index():
 
 @app.route("/login", methods=["POST"])
 def login_endpoint():
+    email = request.json.get("email", EMAIL) if request.json else EMAIL
+    password = request.json.get("password", PASSWORD) if request.json else PASSWORD
+    api_key = request.json.get("apikey", NOCAPTCHA_API_KEY) if request.json else NOCAPTCHA_API_KEY
     run_id = f"run_{int(time.time())}"
     runs[run_id] = {"status": "queued", "logs": [], "result": None}
+    
     def run_bg():
         runs[run_id]["status"] = "running"
+        # Override globals for this run
+        global NOCAPTCHA_API_KEY
+        old_key = NOCAPTCHA_API_KEY
+        if api_key:
+            NOCAPTCHA_API_KEY = api_key
         try:
             asyncio.run(main())
             runs[run_id]["status"] = "completed"
         except Exception as e:
             runs[run_id]["status"] = "failed"
             runs[run_id]["error"] = str(e)
+            import traceback
+            runs[run_id]["logs"].append(traceback.format_exc())
+        finally:
+            NOCAPTCHA_API_KEY = old_key
+    
     import threading
     t = threading.Thread(target=run_bg)
     t.daemon = True
     t.start()
-    return jsonify({"run_id": run_id, "status": "started"})
+    return jsonify({"run_id": run_id, "status": "started", "message": "Poll /status/<run_id> for logs"})
 
 @app.route("/status/<run_id>")
 def status_endpoint(run_id):
@@ -403,8 +417,6 @@ def cookies_endpoint():
     with open(f) as fh:
         return jsonify(json.load(fh))
 
-if __name__ == "__main__" and "NOCAPTCHA_API_KEY" in os.environ:
+if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port, threaded=True)
-elif __name__ == "__main__":
-    asyncio.run(main())
