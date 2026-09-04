@@ -86,8 +86,13 @@ def run_login_async(run_id, email, password):
                             "--disable-dev-shm-usage",
                             "--disable-gpu",
                             "--disable-software-rasterizer",
+                            "--disable-dev-tools",
                             "--no-first-run",
                             "--no-default-browser-check",
+                            "--disable-extensions",
+                            "--disable-plugins",
+                            "--disable-background-networking",
+                            "--disable-sync",
                             "--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
                         ],
                     )
@@ -474,15 +479,23 @@ def debug():
         
         async def test_nodriver():
             browser = await uc.start(
-                browser_executable_path="/usr/bin/chromium",
+                browser_executable_path=os.environ.get("CHROME_PATH", "/usr/bin/chromium"),
                 headless=False,
                 sandbox=False,
-                browser_args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
+                browser_args=[
+                    "--no-sandbox",
+                    "--disable-dev-shm-usage",
+                    "--disable-gpu",
+                    "--disable-software-rasterizer",
+                    "--no-first-run",
+                    "--no-default-browser-check",
+                ],
             )
             page = await browser.get("about:blank")
-            await asyncio.sleep(2)
+            await asyncio.sleep(3)
+            title = await page.evaluate("(() => document.title)()")
             browser.stop()
-            return "nodriver OK"
+            return f"nodriver OK, title={title}"
         
         results["nodriver_test"] = asyncio.run(test_nodriver())
     except Exception as e:
@@ -492,8 +505,17 @@ def debug():
 
 
 if __name__ == "__main__":
-    # Start Xvfb for headed Chrome (nodriver needs a display)
+    # Start dbus (Chrome needs it)
     import subprocess
+    try:
+        subprocess.Popen(["dbus-daemon", "--system", "--fork"],
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        time.sleep(1)
+        print("dbus started", flush=True)
+    except Exception as e:
+        print(f"dbus failed (non-fatal): {e}", flush=True)
+    
+    # Start Xvfb for headed Chrome
     try:
         subprocess.Popen(["Xvfb", ":99", "-screen", "0", "1280x900x24", "-ac", "-nolisten", "unix"],
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
